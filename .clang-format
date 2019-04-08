@@ -1,0 +1,7 @@
+Standard: Cpp11
+BasedOnStyle: LLVM
+ColumnLimit: 150
+IndentWidth: 4
+UseTab: Never
+PointerAlignment: Left  
+AlignConsecutiveMacros: true
