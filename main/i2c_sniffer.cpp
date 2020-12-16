@@ -1,11 +1,11 @@
 #include "i2c_sniffer.h"
+#include <esp32/rom/ets_sys.h>
 #include <esp_log.h>
 #include <esp_system.h>
 #include <esp_timer.h>
 #include <freertos/FreeRTOS.h>
 #include <freertos/queue.h>
 #include <freertos/task.h>
-#include <rom/ets_sys.h>
 #include <string.h>
 
 static const char* TAG = "i2c-sniffer";

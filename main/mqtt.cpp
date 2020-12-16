@@ -1,6 +1,7 @@
 #include "mqtt.h"
 #include "wifi.h"
-#include <esp_event_loop.h>
+#include <esp32/rom/ets_sys.h>
+#include <esp_event.h>
 #include <esp_log.h>
 #include <esp_system.h>
 #include <esp_timer.h>
@@ -12,7 +13,6 @@
 #include <mbedtls/ssl.h>
 #include <mqtt_client.h>
 #include <nvs_flash.h>
-#include <rom/ets_sys.h>
 #include <string.h>
 #include <string>
 

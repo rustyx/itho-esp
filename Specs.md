@@ -103,10 +103,10 @@ Deregister an RFT (press 1+2+3+4):
 
 Notes:
 
-* Each command is repeated 3 times with ~100ms interval
-* Note sure if my interpretation of (4b: msg timestamp, (1b: command seq nr, (2b: seq) is correct, but they can be all (00's (at least for HRU
+* Each command is repeated 3 times with a short interval
+* Note sure if my interpretation of (4b: msg timestamp), (1b: command seq nr), (2b: seq) is correct, but they can all be `00`'s (at least for HRU
 ecofan)
-* (3b: commander ID) are last 3 bytes of the ID (or maybe it's always 3 bytes and in the case of 4b: prefixed with 16)
+* (3b: commander ID) are the last 3 bytes of the ID (or maybe it's always 3 bytes and in the case of 4b prefixed with `16`)
 
 ---
 

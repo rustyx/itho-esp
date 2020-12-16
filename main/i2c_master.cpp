@@ -10,8 +10,8 @@
 static const char* TAG = "i2c-master";
 
 void i2c_master_init() {
-    i2c_config_t conf = {I2C_MODE_MASTER,   I2C_MASTER_SDA_IO,     I2C_MASTER_SDA_PULLUP,
-                         I2C_MASTER_SCL_IO, I2C_MASTER_SCL_PULLUP, {.master = {I2C_MASTER_FREQ_HZ}}};
+    i2c_config_t conf = {I2C_MODE_MASTER,       I2C_MASTER_SDA_IO,     I2C_MASTER_SCL_IO,
+                         I2C_MASTER_SDA_PULLUP, I2C_MASTER_SCL_PULLUP, {.master = {I2C_MASTER_FREQ_HZ}}};
     i2c_param_config(I2C_MASTER_NUM, &conf);
     i2c_driver_install(I2C_MASTER_NUM, conf.mode, 0, 0, 0);
     ESP_LOGI(TAG, "Master pin assignment: SCL=%d, SDA=%d", I2C_MASTER_SCL_IO, I2C_MASTER_SDA_IO);

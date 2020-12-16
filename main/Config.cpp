@@ -23,6 +23,7 @@ bool Config::Read() {
         ESP_LOGW(TAG, "Not configured. Enter \"config\" to configure.");
         return false;
     }
+    wifiAPMode = false;
     wifiSsid = nvs.ReadString("ssid");
     wifiPw = nvs.ReadString("wifipw");
     mqtturi = nvs.ReadString("mqtturi");
@@ -80,28 +81,36 @@ bool Config::Reconfigure() {
     parseHexStr(tmp.c_str(), tmp.length(), (uint8_t*)&rftKey, 4);
     if (!console_read("SSID: ", wifiSsid))
         return false;
-    if (!wifiSsid.empty()) {
+    if (wifiSsid.empty()) {
+        ESP_LOGI(TAG, "Wi-Fi disabled");
+    } else {
         if (!console_read("WiFi pw: ", wifiPw))
             return false;
     }
     if (!console_read("MQTT URI (e.g. mqtts://user:pass@host:port): ", mqtturi))
         return false;
-    if (!mqtturi.empty()) {
+    if (mqtturi.empty()) {
+        ESP_LOGI(TAG, "MQTT disabled");
+    } else {
         if (!console_read("MQTT Client ID prefix [esp]: ", mqttId, "esp"))
             return false;
-        if (!console_read("MQTT Server Cert PEM: ", mqttServerCert, "", true))
+        if (!console_read("MQTT Server Cert PEM (if needed): ", mqttServerCert, "", true))
             return false;
-        if (!console_read("MQTT Client Key PEM: ", mqttClientKey, "", true))
+        if (!console_read("MQTT Client Key PEM (if needed): ", mqttClientKey, "", true))
             return false;
-        if (!console_read("MQTT Client Cert PEM: ", mqttClientCert, "", true))
+        if (mqttClientKey.empty())
+            mqttClientCert = "";
+        else if (!console_read("MQTT Client Cert PEM (if needed): ", mqttClientCert, "", true))
             return false;
-        if (!console_read("MQTT QoS: ", tmp))
+        if (!console_read("MQTT QoS (0,1,2): ", tmp))
             return false;
         mqttqos = atoi(tmp.c_str());
     }
-    if (!Write())
+    if (!Write()) {
+        ESP_LOGE(TAG, "Config write failed");
         return false;
-    ESP_LOGI(TAG, "Restarting");
+    }
+    ESP_LOGI(TAG, "Config saved. Restarting");
     vTaskDelay(configTICK_RATE_HZ);
     esp_restart();
     return false;

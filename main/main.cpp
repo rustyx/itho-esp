@@ -9,7 +9,7 @@
 #include "util.h"
 #include "wifi.h"
 #include <driver/uart.h>
-#include <esp_event_loop.h>
+#include <esp_event.h>
 #include <esp_log.h>
 #include <esp_system.h>
 #include <freertos/FreeRTOS.h>
@@ -112,6 +112,10 @@ static void processConsoleCommand() {
     } else if (strcmp(cmd, "H") == 0) {
         reportHex = true;
         printf("esp-data-hex reporting ON\n");
+    } else if (strcmp(cmd, "r") == 0) {
+        printf("Restarting\n");
+        vTaskDelay(configTICK_RATE_HZ / 4);
+        esp_restart();
     } else if (strcmp("config", cmd) == 0) {
         if (config.Reconfigure()) {
             i2c_sniffer_enable();
@@ -172,7 +176,7 @@ static void requestStatusLoopTask(void* arg) {
 */
 void handleStatus(const uint8_t* data, size_t len) {
     std::string s;
-    char buf[16];
+    char buf[64];
     s.reserve(4 * len + 4);
     s = "[";
     size_t i = 0;
@@ -292,7 +296,7 @@ extern "C" void app_main() {
             break;
         }
     }
-    printf("\n");
+    printf("\nConsole started\n");
     verbose = true;
     while (1) {
         int len = uart_read_bytes(UART_NUM_0, (uint8_t*)buf, sizeof(buf), 2);

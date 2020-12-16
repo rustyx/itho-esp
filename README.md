@@ -5,18 +5,18 @@ Itho diag port controller
 
 ### WTF is this?
 
-This is ESP32 firmware that connects to the dianostic port of an Itho device in order to communicate with it and let it do things it couldn't before.
+This is an ESP32 firmware that connects to the dianostic port of an Itho device in order to communicate with it and let it do things it couldn't before.
 
-Specifically, this software is designed for controlling the Itho HRU ecofan 350 ventilation unit via MQTT, but can be used to play with the I2C bus of many other Itho products.
+Originally designed for controlling the Itho HRU ecofan 350 ventilation unit via MQTT, but can be used to play with the I2C bus of many other Itho products.
 
 Some key features are:
 
 * I2C bus sniffing - dumps messages to/from the Itho CPU. On products that have peripherals like an RFT receiver, will dump traffic between the peripheral and the CPU.
 * Send and receive dianostic messages to the CPU.
-* Request device status and parse parameter values.
+* Query the device status and parse parameter values.
 * Control the device via Wi-Fi/MQTT.
 * Monitor temperature and humidity via DHT22, publish results via MQTT.
-* (HRU-specific) Monitor ventilation parameters and publish them via MQTT.
+* (HRU-specific) Control ventilation level setting (low, med., high) via MQTT.
 * (HRU-specific) Automatically set ventilation to high when humidity exceeds a threshold value.
 
 ### Prerequisites
@@ -31,17 +31,17 @@ Hardware:
 
 Software:
 
-* [ESP-IDF Framework](https://docs.espressif.com/projects/esp-idf/en/latest/esp32/get-started/index.html) v3.3 and its prerequisites (`xtensa-esp32-elf-gcc`, `pip`, etc.)
+* [ESP-IDF Framework](https://docs.espressif.com/projects/esp-idf/en/latest/esp32/get-started/index.html) v4.2+ and its prerequisites (`xtensa-esp32-elf-gcc`, `pip`, etc.)
 * USB COM driver matching the ESP32 USB interface chip
-* Visual Studio Code (optional)
+* Visual Studio Code with [ESP-IDF extension](https://github.com/espressif/vscode-esp-idf-extension/blob/master/docs/ONBOARDING.md) (optional)
 
 ### Building
 
 * Make sure the ESP Dev Kit can be connected to USB and a COM port is functional
-* Install ESP-IDF framework, make sure it works and has access to the COM port
-* Build the firmware: `make -j4 all`
-* Flash the firmware: `make flash`
-* Attach to the console: `make monitor`
+* Install ESP-IDF framework, make sure it works and has access to the COM port (see [connect your device](https://docs.espressif.com/projects/esp-idf/en/latest/esp32/get-started/#get-started-connect))
+* Build the firmware: `idf.py build`
+* Flash the firmware: `idf.py -b 921600 flash` (will also invoke `build` if needed)
+* Attach to the console: `idf.py monitor` (can combine with the `flash` command)
 
 ### Console interface
 
