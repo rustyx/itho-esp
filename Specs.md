@@ -26,7 +26,7 @@ Second byte is reply address (0x80 = dongle)
 
 ---
 
-### Command `90 E0 04`: query device type
+### Message `90 E0 04`: query device type
 
 82 80 90 E0 04 00 8A
 
@@ -38,7 +38,7 @@ Example reply:
 
 ---
 
-### Command `A4 00 04`: query status format
+### Message `A4 00 04`: query status format
 
 82 80 A4 00 04 00 56
 
@@ -58,7 +58,7 @@ Data format (1 byte):
 
 ---
 
-### Command `A4 01 04`: query device status
+### Message `A4 01 04`: query device status
 
 82 80 A4 01 04 00 55
 
@@ -71,6 +71,8 @@ Example reply:
 The temperatures are the bytes 09 09 09 8A, or (0x0909 and 0x098A) 23.13 C en 24.42 C respectively (.01 values).
 
 The first 00 00 is the ventilation level. It goes from 0 for position "1" to 03E8 (100.0) for level "3".
+
+For the meaning of each data element refer to [Itho Data Labels.xlsx](Itho%20Data%20Labels.xlsx)
 
 ---
 
