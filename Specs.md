@@ -41,11 +41,16 @@ The I2C pins were carefully chosen so that they can be wired into a "bus", as ca
 The Itho mainboard is an I2C master running at ~100kHz.  
 Each packet has a checksum byte at the end, which is the negative sum of all other bytes.  
 First byte is destination address (0x82 = Itho mainboard).  
-Second byte is reply address (0x80 = dongle).
+Second byte is reply address (0x80 = dongle).  
+2 bytes: message code.  
+1 byte: message flags (it seems: `04` = request, `01` = reply).  
+1 byte: payload length (N).  
+N bytes: payload.  
+1 byte: checksum.  
 
 ---
 
-### Message `90 E0 04`: query device type
+### Message `90 E0`: query device type
 
 82 80 90 E0 04 00 8A
 
@@ -53,11 +58,42 @@ Example reply:
 
 80 82 90 E0 01 12 00 01 00 03 12 0B 00 00 00 FF FF FF FF FF FF FF FF 00 62
 
-03 = HRU, 12 0B = version/revision.
+`00` = Manufacturer (Itho), `03` = Device type (HRU), `12 0B` = version/revision.
+
+Some known Device Type codes:
+
+`01` : Lucht gordijn  
+`03` : HRU ECO-fan  
+`08` : Laadboiler  
+`0A` : Gas gestookte boost boiler  
+`0B` : DemandFlow  
+`0C` : CO2 relay  
+`0D` : Warmtepomp  
+`0E` : Oplaadboiler enkele wisselaar  
+`0F` : AutoTemp  
+`10` : Oplaadboiler dubbele wisselaar  
+`11` : RF+  
+`14` : CVE  
+`15` : Extended  
+`16` : Extended Plus  
+`1A` : AreaFlow  
+`1B` : CVE-Silent  
 
 ---
 
-### Message `A4 00 04`: query status format
+### Message `90 E1`: query device serial number
+
+82 80 90 E1 04 00 89
+
+Example reply (edited):
+
+80 82 90 E1 01 03 52 D3 3C 48
+
+Serial nr: 52D33C = 5428028
+
+---
+
+### Message `A4 00`: query status format
 
 82 80 A4 00 04 00 56
 
@@ -75,9 +111,11 @@ Data format (1 byte):
 | 6..4 | size in bytes (2^n): 0=1, 1=2, 2=4 |
 | 3..0 | decimal digits (divider 10^n)      |
 
+So for example `91` would mean "signed, 2 bytes, 0.1 values".
+
 ---
 
-### Message `A4 01 04`: query device status
+### Message `A4 01`: query device status
 
 82 80 A4 01 04 00 55
 
