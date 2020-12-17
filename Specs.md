@@ -17,6 +17,25 @@ There is no +5V available, but is not needed due to the built-in pull-ups (the l
 
 ---
 
+### GPIO Pin assignment
+
+| GPIO | Desc            | Notes                                     |
+| ---- | --------------- | ----------------------------------------- |
+| 0    | Reset           | The ESP32 reset pin (inverted)            |
+| 13   | I2C Sniffer SDA | Defined in [i2c_sniffer.h](i2c_sniffer.h) |
+| 14   | I2C Slave SDA   | Defined in [i2c_slave.h](i2c_slave.h)     |
+| 15   | DHT Data        | Defined in [dht.h](dht.h)                 |
+| 25   | I2C Sniffer SCL |                                           |
+| 26   | I2C Master SCL  | Defined in [i2c_master.h](i2c_master.h)   |
+| 27   | I2C Master SDA  |                                           |
+| 33   | I2C Slave SCL   |                                           |
+
+The I2C pins were carefully chosen so that they can be wired into a "bus", as can be seen on the schematic:
+
+![schematic](hru-com-esp32_schem.png)
+
+---
+
 ### I2C message format
 
 The Itho mainboard is an I2C master running at ~100kHz.  
@@ -109,7 +128,5 @@ Notes:
 * Note sure if my interpretation of (4b: msg timestamp), (1b: command seq nr), (2b: seq) is correct, but they can all be `00`'s (at least for HRU
 ecofan)
 * (3b: commander ID) are the last 3 bytes of the ID (or maybe it's always 3 bytes and in the case of 4b prefixed with `16`)
-
----
 
 ...
