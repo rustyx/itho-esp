@@ -19,16 +19,16 @@ There is no +5V available, but is not needed due to the built-in pull-ups (the l
 
 ### GPIO Pin assignment
 
-| GPIO | Desc            | Notes                                     |
-| ---- | --------------- | ----------------------------------------- |
-| 0    | Reset           | The ESP32 reset pin (inverted)            |
-| 13   | I2C Sniffer SDA | Defined in [i2c_sniffer.h](i2c_sniffer.h) |
-| 14   | I2C Slave SDA   | Defined in [i2c_slave.h](i2c_slave.h)     |
-| 15   | DHT Data        | Defined in [dht.h](dht.h)                 |
-| 25   | I2C Sniffer SCL |                                           |
-| 26   | I2C Master SCL  | Defined in [i2c_master.h](i2c_master.h)   |
-| 27   | I2C Master SDA  |                                           |
-| 33   | I2C Slave SCL   |                                           |
+| GPIO | Desc            | Notes                                          |
+| ---- | --------------- | ---------------------------------------------- |
+| 0    | Reset           | The ESP32 reset pin (inverted)                 |
+| 13   | I2C Sniffer SDA | Defined in [i2c_sniffer.h](main/i2c_sniffer.h) |
+| 14   | I2C Slave SDA   | Defined in [i2c_slave.h](main/i2c_slave.h)     |
+| 15   | DHT22 I/O       | Defined in [dht.h](main/dht.h)                 |
+| 25   | I2C Sniffer SCL |                                                |
+| 26   | I2C Master SCL  | Defined in [i2c_master.h](main/i2c_master.h)   |
+| 27   | I2C Master SDA  |                                                |
+| 33   | I2C Slave SCL   |                                                |
 
 The I2C pins were carefully chosen so that they can be wired into a "bus", as can be seen on the schematic:
 
