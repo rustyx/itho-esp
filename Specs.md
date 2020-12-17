@@ -19,10 +19,10 @@ There is no +5V available, but is not needed due to the built-in pull-ups (the l
 
 ### I2C message format
 
-The Itho mainboard is the I2C master running at ~100kHz.
-Each packet has a checksum byte at the end, which is the negative sum of all other bytes.
-First byte is destination address (0x82 = Itho mainboard)
-Second byte is reply address (0x80 = dongle)
+The Itho mainboard is an I2C master running at ~100kHz.  
+Each packet has a checksum byte at the end, which is the negative sum of all other bytes.  
+First byte is destination address (0x82 = Itho mainboard).  
+Second byte is reply address (0x80 = dongle).
 
 ---
 
