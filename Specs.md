@@ -58,7 +58,9 @@ Example reply:
 
 80 82 90 E0 01 12 00 01 00 03 12 0B 00 00 00 FF FF FF FF FF FF FF FF 00 62
 
-`00` = Manufacturer (Itho), `03` = Device type (HRU), `12 0B` = version/revision.
+`00` = Manufacturer (Itho), `03` = Device type (HRU), `12` = HW version, `0B` = list version.
+
+The "list version" refers to the Datalabel_V.. table in the corresponding Jet DB (.par) file of the Servicetool.
 
 Some known Device Type codes:
 
@@ -78,6 +80,10 @@ Some known Device Type codes:
 `16` : Extended Plus  
 `1A` : AreaFlow  
 `1B` : CVE-Silent  
+`1C` : CVE-SilentExt  
+`1D` : CVE-SilentExtPlus  
+`20` : RF_CO2  
+`2B` : HRU 350
 
 ---
 
@@ -112,6 +118,13 @@ Data format (1 byte):
 | 3..0 | decimal digits (divider 10^n)      |
 
 So for example `91` would mean "signed, 2 bytes, 0.1 values".
+
+Special cases:
+
+0C: unsigned 1 byte  
+0F: unsigned 1 byte * 0.5  
+5B: unsigned 2 bytes  
+6C: 1 byte boolean
 
 ---
 
