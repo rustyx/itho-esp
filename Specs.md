@@ -43,7 +43,7 @@ Each packet has a checksum byte at the end, which is the negative sum of all oth
 First byte is destination address (0x82 = Itho mainboard).  
 Second byte is reply address (0x80 = dongle).  
 2 bytes: message code.  
-1 byte: message flags (it seems: `04` = request, `01` = reply).  
+1 byte: message flags (it seems:  `06` = write, `04` = request, `01` = reply).  
 1 byte: payload length (N).  
 N bytes: payload.  
 1 byte: checksum.  
@@ -149,35 +149,35 @@ For the meaning of each data element refer to [Itho Data Labels.xlsx](Itho%20Dat
 ### Itho ecofan RFT 536-0124 (RF remote control) messages
 
 Button 1:  
-82 60 C1 01 01 11 (4b: msg timestamp) (4b: commander ID) (1b: command seq nr) 22 F1 03 00 02 04 (2b: seq) (1b: checksum)
+82 60 C1 01 01 11 (4b: msg timestamp) (1b: msg format) (3b: commander ID) (1b: command seq nr) 22 F1 03 00 02 04 (2b: seq) (1b: checksum)
 
 Button 2:  
-82 60 C1 01 01 11 (4b: msg timestamp) (4b: commander ID) (1b: command seq nr) 22 F1 03 00 03 04 (2b: seq) (1b: checksum)
+82 60 C1 01 01 11 (4b: msg timestamp) (1b: msg format) (3b: commander ID) (1b: command seq nr) 22 F1 03 00 03 04 (2b: seq) (1b: checksum)
 
 Button 3:  
-82 60 C1 01 01 11 (4b: msg timestamp) (4b: commander ID) (1b: command seq nr) 22 F1 03 00 04 04 (2b: seq) (1b: checksum)
+82 60 C1 01 01 11 (4b: msg timestamp) (1b: msg format) (3b: commander ID) (1b: command seq nr) 22 F1 03 00 04 04 (2b: seq) (1b: checksum)
 
 Button 4 (1st press):  
-82 60 C1 01 01 11 (4b: msg timestamp) (4b: commander ID) (1b: command seq nr) 22 F3 03 00 00 0A (2b: seq) (1b: checksum)
+82 60 C1 01 01 11 (4b: msg timestamp) (1b: msg format) (3b: commander ID) (1b: command seq nr) 22 F3 03 00 00 0A (2b: seq) (1b: checksum)
 
 Button 4 (2nd press):  
-82 60 C1 01 01 11 (4b: msg timestamp) (4b: commander ID) (1b: command seq nr) 22 F3 03 00 00 14 (2b: seq) (1b: checksum)
+82 60 C1 01 01 11 (4b: msg timestamp) (1b: msg format) (3b: commander ID) (1b: command seq nr) 22 F3 03 00 00 14 (2b: seq) (1b: checksum)
 
 Button 4 (3rd press):  
-82 60 C1 01 01 11 (4b: msg timestamp) (4b: commander ID) (1b: command seq nr) 22 F3 03 00 00 1E (2b: seq) (1b: checksum)
+82 60 C1 01 01 11 (4b: msg timestamp) (1b: msg format) (3b: commander ID) (1b: command seq nr) 22 F3 03 00 00 1E (2b: seq) (1b: checksum)
 
 Register an RFT (press 1+4 or 2+3):  
-82 60 C1 01 01 1A (4b: msg timestamp) (4b: commander ID) (1b: command seq nr) 1F C9 0C 00 22 F1 (3b: commander ID) 01 10 E0 (3b: commander
+82 60 C1 01 01 1A (4b: msg timestamp) (1b: msg format) (3b: commander ID) (1b: command seq nr) 1F C9 0C 00 22 F1 (3b: commander ID) 01 10 E0 (3b: commander
 ID) (2b: seq) (1b: checksum)
 
 Deregister an RFT (press 1+2+3+4):  
-82 60 C1 01 01 14 (4b: msg timestamp) (4b: commander ID) (1b: command seq nr) 1F C9 06 00 1F C9 (3b: commander ID) (2b: seq) (1b: checksum)
+82 60 C1 01 01 14 (4b: msg timestamp) (1b: msg format) (3b: commander ID) (1b: command seq nr) 1F C9 06 00 1F C9 (3b: commander ID) (2b: seq) (1b: checksum)
 
 Notes:
 
 * Each command is repeated 3 times with a short interval
-* Note sure if my interpretation of (4b: msg timestamp), (1b: command seq nr), (2b: seq) is correct, but they can all be `00`'s (at least for HRU
-ecofan)
-* (3b: commander ID) are the last 3 bytes of the ID (or maybe it's always 3 bytes and in the case of 4b prefixed with `16`)
+* Note sure if my interpretation of (4b: msg timestamp), (1b: command seq nr), (2b: seq) is correct, most can be `00`'s but some itho devices (but not the HRU) need to have the command seq nr changed every message.
+* (3b: commander ID) are the 3 bytes of the device ID
+* (1b: msg format) is the message format determining the fields present in the message. For standard 4 button remotes this is `16`.
 
 ...
