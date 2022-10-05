@@ -64,6 +64,16 @@ Software:
 * `ping` - request `pong`
 * Hex bytes - send these bytes to the bus
 
+### MQTT topics
+
+`esp` - The topic for MQTT requests.
+
+`esp-data` - The topic for MQTT replies. In addition, Itho status data + DHT data are published here as a JSON array every 5 seconds.
+
+`esp-data-dht` - DHT data (humidity, temp, status) is published here when `hum` is requested.
+
+`esp-data-hex` - when hex reporting is enabled, all Itho response messages are published here in hex format.
+
 ### Tech specs
 
 For technical details and other research notes refer to [Specs.md](Specs.md)
