@@ -31,8 +31,14 @@ static void i2c_slave_task(void* arg) {
 }
 
 void i2c_slave_init(i2c_slave_callback_t cb) {
-    i2c_config_t conf = {I2C_MODE_SLAVE,       I2C_SLAVE_SDA_IO,     I2C_SLAVE_SCL_IO,
-                         I2C_SLAVE_SDA_PULLUP, I2C_SLAVE_SCL_PULLUP, {.slave = {0, I2C_SLAVE_ADDRESS}}};
+    i2c_config_t conf {};
+    conf.mode = I2C_MODE_SLAVE;
+    conf.sda_io_num = I2C_SLAVE_SDA_IO;
+    conf.scl_io_num =I2C_SLAVE_SCL_IO;
+    conf.sda_pullup_en = I2C_SLAVE_SDA_PULLUP;
+    conf.scl_pullup_en = I2C_SLAVE_SCL_PULLUP;
+    conf.slave.slave_addr = I2C_SLAVE_ADDRESS;
+    
     i2c_param_config(I2C_SLAVE_NUM, &conf);
     i2c_callback = cb;
     i2c_driver_install(I2C_SLAVE_NUM, conf.mode, I2C_SLAVE_RX_BUF_LEN, 0, 0);
