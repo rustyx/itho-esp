@@ -13,3 +13,15 @@ size_t parseHexStr(const char* hex, size_t hexlen, uint8_t* buf, size_t buflen) 
     }
     return len;
 }
+
+std::string toHexStr(const uint8_t* data, unsigned len) {
+    std::string s;
+    s.reserve(len * 3 + 2);
+    for (size_t i = 0; i < len; ++i) {
+        if (i)
+            s += ' ';
+        s += toHex(data[i] >> 4);
+        s += toHex(data[i] & 0xF);
+    }
+    return s;
+}

@@ -1,6 +1,7 @@
 #pragma once
 #include <cstddef>
 #include <cstdint>
+#include <string>
 
 inline bool isHex(char c) { return (c >= '0' && c <= '9') || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F'); }
 
@@ -19,3 +20,5 @@ inline uint8_t checksum(const uint8_t* buf, size_t buflen) {
 inline void fixChecksum(uint8_t* buf, size_t buflen) { buf[buflen - 1] = checksum(buf, buflen - 1); }
 
 inline char toHex(uint8_t c) { return c < 10 ? c + '0' : c + 'A' - 10; }
+
+std::string toHexStr(const uint8_t* data, unsigned len);

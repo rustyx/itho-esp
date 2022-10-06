@@ -62,6 +62,8 @@ Software:
 * `hum` - request DHT22 temp/humidity values
 * `status` - request device status
 * `ping` - request `pong`
+* `high_hum_threshold` - get current high humidity threshold (output goes to `esp-data-dht`)
+* `high_hum_threshold N` - set high humidity threshold to N * 0.1% (e.g. for 75% use 750)
 * Hex bytes - send these bytes to the bus
 
 ### MQTT topics

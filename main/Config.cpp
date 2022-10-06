@@ -33,6 +33,7 @@ bool Config::Read() {
     mqttClientCert = nvs.ReadString("mqttcc");
     mqttqos = nvs.ReadShort("mqttqos");
     rftKey = nvs.ReadInt("rftKey");
+    high_hum_threshold = normalize_high_hum_threshold(nvs.ReadShort("hum1"));
     nvs.EndRead();
     uint8_t mac[8];
     int rc = esp_read_mac(mac, ESP_MAC_WIFI_STA);
@@ -64,6 +65,7 @@ bool Config::Write() {
     nvs.WriteString("mqttcc", mqttClientCert);
     nvs.WriteShort("mqttqos", mqttqos);
     nvs.WriteInt("rftKey", rftKey);
+    nvs.WriteShort("hum1", high_hum_threshold);
     return nvs.EndWrite();
 }
 
@@ -106,6 +108,11 @@ bool Config::Reconfigure() {
             return false;
         mqttqos = atoi(tmp.c_str());
     }
+    std::string defaultValue = std::to_string(default_high_hum_threshold);
+    std::string prompt = "high_hum_threshold? (in 0.1%) [" + defaultValue + "]";
+    if (!console_read(prompt.c_str(), tmp, defaultValue.c_str()))
+        return false;
+    high_hum_threshold = normalize_high_hum_threshold(atoi(tmp.c_str()));
     if (!Write()) {
         ESP_LOGE(TAG, "Config write failed");
         return false;

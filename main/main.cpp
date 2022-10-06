@@ -51,13 +51,24 @@ static void publishHumidity() {
     mqtt_publish("esp-data-dht", buf);
 }
 
-static int64_t lastSetTime;
 static uint8_t set1[]{0x82, 0x60, 0xC1, 0x01, 0x01, 0x11, 0x00, 0x00, 0x00, 0x00, 0xFF, 0xFF,
                       0xFF, 0xFF, 0x00, 0x22, 0xF1, 0x03, 0x00, 0x02, 0x04, 0x00, 0x00, 0xCC};
 static uint8_t set2[]{0x82, 0x60, 0xC1, 0x01, 0x01, 0x11, 0x00, 0x00, 0x00, 0x00, 0xFF, 0xFF,
                       0xFF, 0xFF, 0x00, 0x22, 0xF1, 0x03, 0x00, 0x03, 0x04, 0x00, 0x00, 0xCC};
 static uint8_t set3[]{0x82, 0x60, 0xC1, 0x01, 0x01, 0x11, 0x00, 0x00, 0x00, 0x00, 0xFF, 0xFF,
                       0xFF, 0xFF, 0x00, 0x22, 0xF3, 0x03, 0x00, 0x00, 0x1E, 0x00, 0x00, 0xCC};
+
+static void initRFTKey(uint32_t rftKey) {
+    memcpy(set1 + 10, &rftKey, 4);
+    fixChecksum(set1, sizeof(set1));
+    memcpy(set2 + 10, &rftKey, 4);
+    fixChecksum(set2, sizeof(set2));
+    memcpy(set3 + 10, &rftKey, 4);
+    fixChecksum(set3, sizeof(set3));
+}
+
+static int64_t lastSetTime;
+
 static void processCommand(const char* data, int data_len) {
     if (strncmp("set1", data, data_len) == 0) {
         lastSetTime = std::max(lastSetTime, esp_timer_get_time()) + 3600 * 1000000LL;
@@ -66,16 +77,64 @@ static void processCommand(const char* data, int data_len) {
         sendBytes(set2, sizeof(set2));
     } else if (strncmp("set3", data, data_len) == 0) { // 30min
         sendBytes(set3, sizeof(set3));
+    }
+    // } else if (strncmp("sniff0", data, data_len) == 0) {
+    //     i2c_sniffer_disable();
+    //     reportHex = false;
+    //     mqtt_publish("esp-data", "sniffer off");
+    // } else if (strncmp("sniff1", data, data_len) == 0) {
+    //     i2c_sniffer_enable();
+    //     reportHex = true;
+    //     mqtt_publish("esp-data", "sniffer on");
+    // } else if (strncmp("rftkey", data, 6) == 0) {
+    //     unsigned i = 6;
+    //     while (data[i] == ' ')
+    //         i++;
+    //     if (i < data_len) {
+    //         uint32_t key = 0;
+    //         parseHexStr(data + i, data_len - i, (uint8_t*)&key, 4);
+    //         if (key) {
+    //             config.rftKey = key;
+    //             initRFTKey(config.rftKey);
+    //             if (!config.Write()) {
+    //                 ESP_LOGE(TAG, "Config write failed");
+    //             }
+    //         }
+    //     }
+    //     std::string s = "rftkey=";
+    //     s += toHexStr((uint8_t*)&config.rftKey, 4);
+    //     mqtt_publish("esp-data", s.c_str());
+    else if (strncmp("high_hum_threshold", data, 18) == 0) {
+        unsigned i = 18;
+        while (data[i] == ' ')
+            i++;
+        if (i < data_len) {
+            std::string hum_str(data + i, data + data_len);
+            int hum = atoi(hum_str.c_str());
+            if (hum < 100 || hum > 1000) {
+                std::string buf = "invalid parameter value " + hum_str;
+                ESP_LOGE(TAG, "%s", buf.c_str());
+                mqtt_publish("esp-data-dht", buf.c_str());
+                return;
+            }
+            config.high_hum_threshold = Config::normalize_high_hum_threshold(hum);
+            if (!config.Write()) {
+                ESP_LOGE(TAG, "Config write failed");
+            }
+        }
+        int hum1 = config.high_hum_threshold / 10, hum2 = config.high_hum_threshold % 10;
+        std::string buf = "high_hum_threshold=" + std::to_string(hum1) + '.' + std::to_string(hum2);
+        ESP_LOGI(TAG, "%s", buf.c_str());
+        mqtt_publish("esp-data-dht", buf.c_str());
     } else if (strncmp("hum", data, data_len) == 0) {
         publishHumidity();
     } else if (isHex(data[0])) {
         sendBytesHex(data, data_len);
     } else {
-        printf("Unknown command\n");
+        ESP_LOGE(TAG, "Unknown command '%s'", std::string(data, data + data_len).c_str());
     }
 }
 
-static const int high_hum_threshold = 750;    // 75.0%
 static const int mode_set_max_freq_sec = 600; // set mode at most once every 10 min
 static int prev_hum;
 
@@ -83,7 +142,7 @@ static void handleHumidity() {
     if (dht_ret != DHT_OK) {
         return;
     }
-    if (hum >= high_hum_threshold && prev_hum >= high_hum_threshold) {
+    if (hum >= config.high_hum_threshold && prev_hum >= config.high_hum_threshold) {
         int64_t now = esp_timer_get_time();
         if (now - lastSetTime >= mode_set_max_freq_sec * 1000000) {
             ESP_LOGI(TAG, "High humidity, setting mode 3");
@@ -206,14 +265,7 @@ void handleStatus(const uint8_t* data, size_t len) {
 inline bool checksumOk(const uint8_t* data, size_t len) { return checksum(data, len - 1) == data[len - 1]; }
 
 void i2c_slave_callback(const uint8_t* data, size_t len) {
-    std::string s;
-    s.reserve(len * 3 + 2);
-    for (size_t i = 0; i < len; ++i) {
-        if (i)
-            s += ' ';
-        s += toHex(data[i] >> 4);
-        s += toHex(data[i] & 0xF);
-    }
+    std::string s = toHexStr(data, len);
     if (len > 6 && data[1] == 0x82 && data[2] == 0xA4 && data[3] == 0 && data[4] == 1 && data[5] < len - 5 && checksumOk(data, len)) {
         portENTER_CRITICAL(&status_mux);
         datatypes.assign((const char*)data + 6, data[5]);
@@ -274,12 +326,7 @@ extern "C" void app_main() {
     uart_driver_install(UART_NUM_0, 512, 512, 32, NULL, ESP_INTR_FLAG_LEVEL1);
     nvs.Init();
     config.Read();
-    memcpy(set1, &config.rftKey, 4);
-    fixChecksum(set1, sizeof(set1));
-    memcpy(set2, &config.rftKey, 4);
-    fixChecksum(set2, sizeof(set2));
-    memcpy(set3, &config.rftKey, 4);
-    fixChecksum(set3, sizeof(set3));
+    initRFTKey(config.rftKey);
     i2c_sniffer_init(false);
     i2c_master_init();
     i2c_slave_init(&i2c_slave_callback);
