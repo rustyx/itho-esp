@@ -31,9 +31,9 @@ Hardware:
 
 Software:
 
-* [ESP-IDF Framework](https://docs.espressif.com/projects/esp-idf/en/latest/esp32/get-started/index.html) v4.2+ and its prerequisites (`xtensa-esp32-elf-gcc`, `pip`, etc.)
+* [ESP-IDF Framework](https://docs.espressif.com/projects/esp-idf/en/latest/esp32/get-started/index.html) v4.4+ and its prerequisites (`xtensa-esp32-elf-gcc`, `pip`, etc.)
 * USB COM driver matching the USB serial interface chip (see [Connect ESP32 to PC](https://docs.espressif.com/projects/esp-idf/en/latest/esp32/get-started/establish-serial-connection.html))
-* [Visual Studio Code](https://code.visualstudio.com/download) with [ESP-IDF extension](https://github.com/espressif/vscode-esp-idf-extension/blob/master/docs/ONBOARDING.md) (optional)
+* [Visual Studio Code](https://code.visualstudio.com/download) with [ESP-IDF extension](https://github.com/espressif/vscode-esp-idf-extension/blob/master/docs/ONBOARDING.md) (optional but recommended, will also help with installing the ESP-IDF framework)
 
 ### Building
 
