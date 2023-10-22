@@ -55,36 +55,6 @@ bool SHT4x::errorHandler(i2c_err_t response) {
 i2c_err_t SHT4x::measure() {
     uint8_t buf[6];
 
-    // i2c_cmd_handle_t link = i2c_cmd_link_create();
-    // i2c_master_start(link);
-    // i2c_master_write_byte(link, SHT4X_ADDRESS << 1, true);
-    // i2c_master_write_byte(link, SHT4X_CMD_MEASURE_HPM, true);
-    // i2c_master_stop(link);
-    // esp_err_t rc = i2c_master_cmd_begin(I2C_MASTER_NUM, link, 25);
-    // i2c_cmd_link_delete(link);
-    // if (rc) {
-    //     ESP_LOGE(TAG, "measure write failed: %#x", rc);
-    //     rc = -6;
-    //     return i2c_err_t::WRITE_NACK;
-    // }
-    // ets_delay_us(SHT4X_MEASUREMENT_DURATION_HPM_USEC);
-    // // vTaskDelay(pdMS_TO_TICKS(9));
-    // link = i2c_cmd_link_create();
-    // i2c_master_start(link);
-    // i2c_master_write_byte(link, (SHT4X_ADDRESS << 1) | 1, true);
-    // i2c_master_read(link, buf, sizeof(buf), I2C_MASTER_LAST_NACK);
-    // i2c_master_stop(link);
-    // rc = i2c_master_cmd_begin(I2C_MASTER_NUM, link, 25);
-    // i2c_cmd_link_delete(link);
-    // if (rc) {
-    //     ESP_LOGE(TAG, "measure read failed: %#x", rc);
-    //     return i2c_err_t::READ_NACK;
-    // }
-    // temperature = ((875 * ((buf[0] << 8) | buf[1])) >> 15) - 450;
-    // humidity = ((625 * ((buf[3] << 8) | buf[4])) >> 15) - 60;
-
-    // return i2c_err_t::OK;
-    // return -1;
     portENTER_CRITICAL(&mutex);
     i2c_err_t res = i2c_write(SHT4X_ADDRESS, SHT4X_CMD_MEASURE_HPM);
     if (res != i2c_err_t::OK) {
@@ -113,39 +83,6 @@ i2c_err_t SHT4x::measure() {
 
     return res;
 }
-
-// int SHT4x::readSerial() {
-//     uint8_t cmd[] = { SHT4X_ADDRESS << 1, SHT4X_CMD_READ_SERIAL };
-//     uint8_t buf[6];
-
-//     i2c_cmd_handle_t link = i2c_cmd_link_create();
-//     i2c_master_start(link);
-//     i2c_master_write(link, cmd, sizeof(cmd), true);
-//     // i2c_master_write_byte(link, SHT4X_ADDRESS << 1, true);
-//     // i2c_master_write_byte(link, SHT4X_CMD_READ_SERIAL, true);
-//     i2c_master_stop(link);
-//     esp_err_t rc = i2c_master_cmd_begin(I2C_MASTER_NUM, link, 25);
-//     i2c_cmd_link_delete(link);
-//     if (rc) {
-//         ESP_LOGE(TAG, "readSerial write failed: %#x", rc);
-//         return -6;
-//     }
-//     ets_delay_us(SHT4X_CMD_DURATION_USEC);
-//     link = i2c_cmd_link_create();
-//     i2c_master_start(link);
-//     i2c_master_write_byte(link, (SHT4X_ADDRESS << 1) | 1, true);
-//     i2c_master_read(link, buf, sizeof(buf), I2C_MASTER_LAST_NACK);
-//     i2c_master_stop(link);
-//     rc = i2c_master_cmd_begin(I2C_MASTER_NUM, link, 25);
-//     i2c_cmd_link_delete(link);
-//     if (rc) {
-//         ESP_LOGE(TAG, "readSerial read failed: %#x", rc);
-//         return -7;
-//     }
-//     serial = buf[0] << 24u | buf[1] << 16u | buf[3] << 8u | buf[4];
-
-//     return 0;
-// }
 
 i2c_err_t SHT4x::readSerial() {
     uint8_t buf[6];
