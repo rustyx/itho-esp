@@ -2,6 +2,7 @@
 #include "Nvs.h"
 #include "console.h"
 #include "dht.h"
+#include "sht4x.h"
 #include "i2c_master.h"
 #include "i2c_slave.h"
 #include "i2c_sniffer.h"
@@ -47,7 +48,7 @@ bool sendBytesHex(const char* hex, size_t hexlen) {
 
 static void publishHumidity() {
     char buf[32];
-    snprintf(buf, sizeof(buf), "[%d.%d,%d.%d,%d]", hum / 10, hum % 10, temp / 10, temp % 10, dht_ret);
+    snprintf(buf, sizeof(buf), "[%d.%d,%d.%d,%d]", hum / 10, hum % 10, temp / 10, temp % 10, (int)dht_ret);
     mqtt_publish("esp-data-dht", buf);
 }
 
@@ -257,7 +258,7 @@ void handleStatus(const uint8_t* data, size_t len) {
             s.append(buf + len - rem, rem);
         }
     }
-    snprintf(buf, sizeof(buf), ",%d.%d,%d.%d,%d]", hum / 10, hum % 10, temp / 10, temp % 10, dht_ret);
+    snprintf(buf, sizeof(buf), ",%d.%d,%d.%d,%d]", hum / 10, hum % 10, temp / 10, temp % 10, (int)dht_ret);
     s += buf;
     mqtt_publish_bin("esp-data", s.c_str(), s.length());
 }
@@ -300,8 +301,7 @@ static void mqtt_message_callback(const char* topic, int topic_len, const char* 
 static void mqtt_connect_callback() { mqtt_subscribe("esp", mqtt_message_callback); }
 
 static void dht_task(void* arg) {
-    ESP_LOGI(TAG, "Starting DHT task on GPIO %d", DHT_IO);
-    DHT dht(DHT_IO);
+    DHT dht((gpio_num_t)config.dht_gpio);
     int errors = 1;
     while (1) {
         vTaskDelay(5 * configTICK_RATE_HZ); // wait at least 2 sec before reading again
@@ -321,9 +321,39 @@ static void dht_task(void* arg) {
     vTaskDelete(nullptr);
 }
 
+#define SHT4x_GPIO_SDA GPIO_NUM_21
+#define SHT4x_GPIO_SCL GPIO_NUM_22
+
+static void sht4x_task(void* arg) {
+    SHT4x sht((gpio_num_t)config.sht4x_sda, (gpio_num_t)config.sht4x_scl);
+    int errors = 1;
+    i2c_err_t res = sht.readSerial();
+    sht.errorHandler(res);
+    ESP_LOGI(TAG, "SHT4x serial: %u", sht.getSerial());
+    while (1) {
+        vTaskDelay(5 * configTICK_RATE_HZ);
+        i2c_err_t res = sht.measure();
+        dht_ret = (int)res;
+        if (!sht.errorHandler(res)) {
+            if (errors && ++errors > 3) {
+                ESP_LOGI(TAG, "Stopping SHT4x task");
+                break;
+            }
+            continue;
+        }
+        errors = 0;
+        hum = sht.getHumidity(), temp = sht.getTemperature();
+        ESP_LOGI(TAG, "Humidity %d.%d, Temp %d.%d", hum / 10, hum % 10, temp / 10, temp % 10);
+        handleHumidity();
+    }
+    vTaskDelete(nullptr);
+}
+
 extern "C" void app_main() {
     setvbuf(stdout, NULL, _IONBF, 0);
     uart_driver_install(UART_NUM_0, 512, 512, 32, NULL, ESP_INTR_FLAG_LEVEL1);
+    // esp_log_level_set("*", ESP_LOG_INFO);
+    // esp_log_level_set("SHT4x", ESP_LOG_DEBUG);
     nvs.Init();
     config.Read();
     initRFTKey(config.rftKey);
@@ -333,7 +363,11 @@ extern "C" void app_main() {
     wifi_init();
     mqtt_init();
     mqtt_on_connect(&mqtt_connect_callback);
-    xTaskCreatePinnedToCore(dht_task, "dht_task", 4096, NULL, 7, NULL, 0);
+    if (config.dht_gpio) {
+        xTaskCreatePinnedToCore(&dht_task, "dht_task", 4096, NULL, 7, NULL, 0);
+    } else if (config.sht4x_sda && config.sht4x_scl) {
+        xTaskCreatePinnedToCore(&sht4x_task, "sht4x_task", 4096, NULL, 7, NULL, 0);
+    }
     xTaskCreatePinnedToCore(requestStatusLoopTask, "statusLoopTask", 4096, NULL, 8, NULL, 1);
 
     printf("Press Enter to start console\n");

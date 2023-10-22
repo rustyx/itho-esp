@@ -15,7 +15,7 @@ Some key features are:
 * Send and receive dianostic messages to the CPU.
 * Query the device status and parse parameter values.
 * Control the device via Wi-Fi/MQTT.
-* Monitor temperature and humidity via DHT22, publish results via MQTT.
+* Monitor temperature and humidity via DHT22 or SHT4x, publish results via MQTT.
 * (HRU-specific) Control ventilation level setting (low, med., high) via MQTT.
 * (HRU-specific) Automatically set ventilation to high when humidity exceeds a threshold value.
 
@@ -26,7 +26,7 @@ Hardware:
 * An Itho ecofan HRU 350 WTW unit (or another Itho product that has an RJ45 diagnostic port)
 * ESP32 Dev Kit (or a raw ESP32 unit + power supply + a USB COM dongle + some SMD work)
 * a logic level shifter for converting 5V <-> 3,3V logic levels (or 2 small N-channel MOSFETs)
-* DHT22 (optional, to measure humidity)
+* DHT22 or SHT4x (optional, to measure humidity)
 * DC-DC buck converter (optional, to power ESP32 directly from the Itho diag port's +15V)
 
 Software:
@@ -45,7 +45,7 @@ Software:
 
 ### Console interface
 
-* `config` : Configure Wi-Fi and MQTT
+* `config` : Configure Wi-Fi, MQTT and humidity sensor GPIO
 * `p` : Pullup OFF
 * `P` : Pullup ON
 * `s` : Sniffer OFF

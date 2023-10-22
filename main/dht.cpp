@@ -19,8 +19,8 @@
 
 static char TAG[] = "DHT";
 
-void DHT::setGpio(gpio_num_t gpio) {
-    dhtGpio = gpio;
+DHT::DHT(gpio_num_t pin) : dhtGpio(pin) {
+    ESP_LOGI(TAG, "Starting DHT on GPIO %d", dhtGpio);
     gpio_config_t config{BIT64(dhtGpio), GPIO_MODE_INPUT, GPIO_PULLUP_DISABLE, GPIO_PULLDOWN_DISABLE, GPIO_INTR_DISABLE};
     gpio_config(&config);
 }

@@ -1,6 +1,7 @@
 {
   "C_Cpp.clang_format_style": "Visual Studio",
   "editor.formatOnSave": true,
+  "cmake.generator": "Ninja",
   "[cpp]": {
     "editor.quickSuggestions": {
       "comments": "on",
@@ -15,7 +16,6 @@
       "other": "on"
     }
   },
-  "C_Cpp.intelliSenseEngineFallback": "Enabled",
   "idf.adapterTargetName": "esp32",
   "idf.openOcdConfigs": [
     "interface/ftdi/esp32_devkitj_v1.cfg",
