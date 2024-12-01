@@ -5,6 +5,7 @@
 #include "util.h"
 #include "wifi.h"
 #include <esp_log.h>
+#include <esp_mac.h>
 #include <esp_system.h>
 #include <esp_timer.h>
 #include <freertos/FreeRTOS.h>
@@ -34,9 +35,11 @@ bool Config::Read() {
     mqttqos = nvs.ReadShort("mqttqos");
     rftKey = nvs.ReadInt("rftKey");
     high_hum_threshold = normalize_high_hum_threshold(nvs.ReadShort("hum1"));
-    dht_gpio = nvs.ReadShort("dht_gpio");
-    sht4x_sda = nvs.ReadShort("sht4x_sda");
-    sht4x_scl = nvs.ReadShort("sht4x_scl");
+    for (int i = 0; i < sensors.size(); i++) {
+        sensors[i].type = nvs.ReadShort(("sens_typ" + std::to_string(i)).c_str());
+        sensors[i].sda = nvs.ReadShort(("sens_sda" + std::to_string(i)).c_str());
+        sensors[i].scl = nvs.ReadShort(("sens_scl" + std::to_string(i)).c_str());
+    }
     nvs.EndRead();
     if (mqttId.empty()) {
         uint8_t mac[8];
@@ -49,11 +52,11 @@ bool Config::Read() {
         sprintf(buf, "esp-%02x%02x%02x", mac[3], mac[4], mac[5]);
         mqttId = buf;
     }
-    mqtt_config.client_id = mqttId.c_str();
-    mqtt_config.uri = mqtturi.c_str();
-    mqtt_config.cert_pem = trimToNull(mqttServerCert.c_str());
-    mqtt_config.client_key_pem = trimToNull(mqttClientKey.c_str());
-    mqtt_config.client_cert_pem = trimToNull(mqttClientCert.c_str());
+    mqtt_config.credentials.client_id = mqttId.c_str();
+    mqtt_config.broker.address.uri = mqtturi.c_str();
+    mqtt_config.broker.verification.certificate = trimToNull(mqttServerCert.c_str());
+    mqtt_config.credentials.authentication.key = trimToNull(mqttClientKey.c_str());
+    mqtt_config.credentials.authentication.certificate = trimToNull(mqttClientCert.c_str());
     mqtt_config.pub_qos = mqttqos;
     mqtt_config.sub_qos = mqttqos;
     return true;
@@ -71,9 +74,11 @@ bool Config::Write() {
     nvs.WriteShort("mqttqos", mqttqos);
     nvs.WriteInt("rftKey", rftKey);
     nvs.WriteShort("hum1", high_hum_threshold);
-    nvs.WriteShort("dht_gpio", dht_gpio);
-    nvs.WriteShort("sht4x_sda", sht4x_sda);
-    nvs.WriteShort("sht4x_scl", sht4x_scl);
+    for (int i = 0; i < sensors.size(); i++) {
+        nvs.WriteShort(("sens_typ" + std::to_string(i)).c_str(), sensors[i].type);
+        nvs.WriteShort(("sens_sda" + std::to_string(i)).c_str(), sensors[i].sda);
+        nvs.WriteShort(("sens_scl" + std::to_string(i)).c_str(), sensors[i].scl);
+    }
     return nvs.EndWrite();
 }
 
@@ -152,13 +157,28 @@ bool Config::Reconfigure() {
     if (!read_short("high_hum_threshold? (in 0.1%)", high_hum_threshold))
         return false;
     high_hum_threshold = normalize_high_hum_threshold(high_hum_threshold);
-    if (!read_short("DHT GPIO, e.g. 15 (0=unused)", dht_gpio))
-        return false;
-    if (!read_short("SHT4x SDA GPIO (0=unused)", sht4x_sda))
-        return false;
-    if (sht4x_sda) {
-        if (!read_short("SHT4x SCL GPIO", sht4x_scl))
+    for (int i = 0; i < max_sensors; i++) {
+        if (i && sensors[i - 1].type == 0) {
+            sensors[i].type = 0;
+        } else {
+            if (!read_short(("Sensor " + std::to_string(i + 1) + " type (0=unused, 1=DHT, 2=SHT4x)").c_str(), sensors[i].type)) {
+                return false;
+            }
+        }
+        if (sensors[i].type == 0) {
+            sensors[i].sda = sensors[i].scl = 0;
+            continue;
+        }
+        if (!read_short(("Sensor " + std::to_string(i + 1) + " SDA GPIO").c_str(), sensors[i].sda)) {
             return false;
+        }
+        if (sensors[i].type == SensorTypeDHT) {
+            sensors[i].scl = 0;
+            continue;
+        }
+        if (!read_short(("Sensor " + std::to_string(i + 1) + " SCL GPIO").c_str(), sensors[i].scl)) {
+            return false;
+        }
     }
     if (!Write()) {
         ESP_LOGE(TAG, "Config write failed");

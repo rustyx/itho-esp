@@ -59,11 +59,11 @@ i2c_err_t IRAM_ATTR BitbangI2C::i2c_start() {
         if (i == 1) {
             return i2c_err_t::START_TIMEOUT;
         }
-        ets_delay_us(1);
+        esp_rom_delay_us(1);
     }
     // SDA 0
     gpio_set_level(i2c_sda, 0);
-    ets_delay_us(I2C_CLOCK_HOLD_US);
+    esp_rom_delay_us(I2C_CLOCK_HOLD_US);
 
     return i2c_err_t::OK;
 }
@@ -71,38 +71,38 @@ i2c_err_t IRAM_ATTR BitbangI2C::i2c_start() {
 void IRAM_ATTR BitbangI2C::i2c_stop() {
     // SCL 0
     gpio_set_level(i2c_scl, 0);
-    ets_delay_us(1);
+    esp_rom_delay_us(1);
     // SDA 0
     gpio_set_level(i2c_sda, 0);
-    ets_delay_us(I2C_CLOCK_HALF_US - 1);
+    esp_rom_delay_us(I2C_CLOCK_HALF_US - 1);
     // SCL 1
     gpio_set_level(i2c_scl, 1);
-    ets_delay_us(I2C_CLOCK_HALF_US);
+    esp_rom_delay_us(I2C_CLOCK_HALF_US);
     // SDA 1
     gpio_set_level(i2c_sda, 1);
-    ets_delay_us(I2C_CLOCK_HALF_US);
+    esp_rom_delay_us(I2C_CLOCK_HALF_US);
 }
 
 i2c_err_t IRAM_ATTR BitbangI2C::i2c_write_byte(uint8_t data) {
     for (uint8_t mask = 0x80; mask; mask >>= 1) {
         // SCL 0
         gpio_set_level(i2c_scl, 0);
-        ets_delay_us(1);
+        esp_rom_delay_us(1);
         // SDA x
         gpio_set_level(i2c_sda, !!(data & mask));
-        ets_delay_us(I2C_CLOCK_HALF_US - 1);
+        esp_rom_delay_us(I2C_CLOCK_HALF_US - 1);
         // SCL 1
         gpio_set_level(i2c_scl, 1);
-        ets_delay_us(I2C_CLOCK_HALF_US);
+        esp_rom_delay_us(I2C_CLOCK_HALF_US);
     }
     gpio_set_level(i2c_scl, 0);
-    ets_delay_us(1);
+    esp_rom_delay_us(1);
     gpio_set_level(i2c_sda, 1);
-    ets_delay_us(I2C_CLOCK_HALF_US - 1);
+    esp_rom_delay_us(I2C_CLOCK_HALF_US - 1);
     gpio_set_level(i2c_scl, 1);
-    ets_delay_us(I2C_CLOCK_HALF_US - 1);
+    esp_rom_delay_us(I2C_CLOCK_HALF_US - 1);
     int res = gpio_get_level(i2c_sda);
-    ets_delay_us(1);
+    esp_rom_delay_us(1);
 
     return res ? i2c_err_t::WRITE_NACK : i2c_err_t::OK;
 }
@@ -112,32 +112,32 @@ std::pair<i2c_err_t, uint8_t> IRAM_ATTR BitbangI2C::i2c_read_byte(bool ack) {
     for (int i = 0; i < 8; ++i) {
         // SCL 0
         gpio_set_level(i2c_scl, 0);
-        ets_delay_us(1);
+        esp_rom_delay_us(1);
         // SDA 1
         gpio_set_level(i2c_sda, 1);
-        ets_delay_us(I2C_CLOCK_HALF_US - 1);
+        esp_rom_delay_us(I2C_CLOCK_HALF_US - 1);
         // SCL 1
         gpio_set_level(i2c_scl, 1);
-        ets_delay_us(I2C_CLOCK_HALF_US / 2);
+        esp_rom_delay_us(I2C_CLOCK_HALF_US / 2);
         // read SDA
         res.second = (res.second << 1) | gpio_get_level(i2c_sda);
-        ets_delay_us(I2C_CLOCK_HALF_US - I2C_CLOCK_HALF_US / 2);
-        // ets_delay_us(1);
+        esp_rom_delay_us(I2C_CLOCK_HALF_US - I2C_CLOCK_HALF_US / 2);
+        // esp_rom_delay_us(1);
     }
     // SCL 0
     gpio_set_level(i2c_scl, 0);
-    ets_delay_us(1);
+    esp_rom_delay_us(1);
     // SDA 1
     gpio_set_level(i2c_sda, !ack);
-    ets_delay_us(I2C_CLOCK_HALF_US - 1);
+    esp_rom_delay_us(I2C_CLOCK_HALF_US - 1);
     // SCL 1
     gpio_set_level(i2c_scl, 1);
-    ets_delay_us(I2C_CLOCK_HALF_US / 2);
+    esp_rom_delay_us(I2C_CLOCK_HALF_US / 2);
     // read SDA
     if (gpio_get_level(i2c_sda)) {
         res.first = i2c_err_t::READ_NACK;
     }
-    ets_delay_us(I2C_CLOCK_HALF_US - I2C_CLOCK_HALF_US / 2);
+    esp_rom_delay_us(I2C_CLOCK_HALF_US - I2C_CLOCK_HALF_US / 2);
 
     return res;
 }

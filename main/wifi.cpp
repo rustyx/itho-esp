@@ -66,6 +66,9 @@ static void wifi_init_sta() {
     ESP_ERROR_CHECK(esp_event_handler_instance_register(IP_EVENT, IP_EVENT_STA_GOT_IP, &event_handler_sta_ip, NULL, NULL));
     wifi_config_t wificfg = {};
     wificfg.sta.sort_method = WIFI_CONNECT_AP_BY_SIGNAL;
+    wificfg.sta.threshold.authmode = WIFI_AUTH_WPA2_PSK;
+    wificfg.sta.sae_pwe_h2e = WPA3_SAE_PWE_BOTH;
+    wificfg.sta.sae_h2e_identifier[0] = 0;
     strncpy((char*)wificfg.sta.ssid, wifiSsid.c_str(), sizeof(wificfg.sta.ssid) - 1);
     strncpy((char*)wificfg.sta.password, wifiPw.c_str(), sizeof(wificfg.sta.password) - 1);
     ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));

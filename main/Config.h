@@ -1,5 +1,18 @@
 #pragma once
+#include <array>
 #include <string>
+
+constexpr int max_sensors = 3;
+
+constexpr uint16_t SensorTypeDHT = 1;
+constexpr uint16_t SensorTypeSHT4x = 2;
+
+class SensorConfig {
+  public:
+    uint16_t type = 0;
+    uint16_t sda = 0;
+    uint16_t scl = 0;
+};
 
 class Config {
   public:
@@ -11,9 +24,8 @@ class Config {
     uint32_t rftKey = 0;
     uint16_t mqttqos = 0;
     uint16_t high_hum_threshold = default_high_hum_threshold;
-    uint16_t dht_gpio = 0;
-    uint16_t sht4x_sda = 0;
-    uint16_t sht4x_scl = 0;
+    std::array<SensorConfig, max_sensors> sensors;
+
     bool Read();
     /* returns true if sniffing is requested, false on error. Reboots on success (never returns) */
     bool Reconfigure();

@@ -5,7 +5,7 @@
 
 class SHT4x : BitbangI2C {
 public:
-    SHT4x(gpio_num_t i2c_sda, gpio_num_t i2c_scl);
+    SHT4x(const char* tag, gpio_num_t i2c_sda, gpio_num_t i2c_scl);
     bool errorHandler(i2c_err_t response);
     i2c_err_t measure();
     int getHumidity() const { return humidity; }
@@ -14,6 +14,7 @@ public:
     uint32_t getSerial() const { return serial; }
 
 private:
+    char tag[12];
     int humidity = 0;
     int temperature = 0;
     uint32_t serial = 0;

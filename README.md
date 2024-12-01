@@ -15,7 +15,7 @@ Some key features are:
 * Send and receive dianostic messages to the CPU.
 * Query the device status and parse parameter values.
 * Control the device via Wi-Fi/MQTT.
-* Monitor temperature and humidity via DHT22 or SHT4x, publish results via MQTT.
+* Monitor temperature and humidity via DHT22 and/or SHT4x, publish results via MQTT.
 * (HRU-specific) Control ventilation level setting (low, med., high) via MQTT.
 * (HRU-specific) Automatically set ventilation to high when humidity exceeds a threshold value.
 
@@ -26,12 +26,12 @@ Hardware:
 * An Itho ecofan HRU 350 WTW unit (or another Itho product that has an RJ45 diagnostic port)
 * ESP32 Dev Kit (or a raw ESP32 unit + power supply + a USB COM dongle + some SMD work)
 * a logic level shifter for converting 5V <-> 3,3V logic levels (or 2 small N-channel MOSFETs)
-* DHT22 or SHT4x (optional, to measure humidity)
+* One or more DHT22 or SHT4x (optional, to measure humidity)
 * DC-DC buck converter (optional, to power ESP32 directly from the Itho diag port's +15V)
 
 Software:
 
-* [ESP-IDF Framework](https://docs.espressif.com/projects/esp-idf/en/latest/esp32/get-started/index.html) v4.4+ and its prerequisites (`xtensa-esp32-elf-gcc`, `pip`, etc.)
+* [ESP-IDF Framework](https://docs.espressif.com/projects/esp-idf/en/latest/esp32/get-started/index.html) v5.3+ and its prerequisites (`xtensa-esp32-elf-gcc`, `pip`, etc.)
 * USB COM driver matching the USB serial interface chip (see [Connect ESP32 to PC](https://docs.espressif.com/projects/esp-idf/en/latest/esp32/get-started/establish-serial-connection.html))
 * [Visual Studio Code](https://code.visualstudio.com/download) with [ESP-IDF extension](https://github.com/espressif/vscode-esp-idf-extension/blob/master/docs/ONBOARDING.md) (optional but recommended, will also help with installing the ESP-IDF framework)
 
@@ -40,7 +40,8 @@ Software:
 * Make sure the ESP Dev Kit can be connected to USB and a COM port is functional
 * Install ESP-IDF framework, make sure it works and has access to the COM port (see [connect your device](https://docs.espressif.com/projects/esp-idf/en/latest/esp32/get-started/#get-started-connect))
 * Build the firmware: `idf.py build`
-* Flash the firmware: `idf.py -b 921600 flash` (will also invoke `build` if needed)
+* Flash the firmware: `idf.py -b 921600 flash` (will also invoke `build` if needed)  
+  To flash, the ESP32 chip needs to be put in download mode. This can be achieved by shorting J3 pin 5 to ground (pin 4) while booting.
 * Attach to the console: `idf.py monitor` (can combine with the `flash` command)
 
 ### Console interface

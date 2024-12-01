@@ -25,9 +25,10 @@ static mqtt_callback_t mqttCallback;
 #define MAX_MQTT_CALLBACKS 2
 static mqtt_connect_callback_t mqtt_connect_callbacks[MAX_MQTT_CALLBACKS];
 
-static esp_err_t mqtt_event_handler(esp_mqtt_event_handle_t event) {
+static void mqtt_event_handler(void *handler_args, esp_event_base_t base, int32_t event_id, void *event_data) {
     // int msg_id;
-    switch (event->event_id) {
+    esp_mqtt_event_handle_t event = (esp_mqtt_event_handle_t)event_data;
+    switch ((esp_mqtt_event_id_t)event_id) {
     case MQTT_EVENT_CONNECTED:
         xEventGroupSetBits(mqtt_event_group, MQTT_CONNECTED_BIT);
         for (int i = 0; i < MAX_MQTT_CALLBACKS; ++i) {
@@ -67,7 +68,6 @@ static esp_err_t mqtt_event_handler(esp_mqtt_event_handle_t event) {
     default:
         break;
     }
-    return ESP_OK;
 }
 
 bool mqtt_wait_for_connection(TickType_t delay) {
@@ -89,10 +89,10 @@ void mqtt_on_connect(mqtt_connect_callback_t cb) {
 static void mqtt_init_task(void* pvParameter) {
     ESP_LOGI(TAG, "Waiting for connection");
     wifi_wait_for_connection(portMAX_DELAY);
-    mqtt_config.event_handle = mqtt_event_handler;
-    const char* uri = strchr(mqtt_config.uri, '@');
-    ESP_LOGI(TAG, "Connecting %s to %s", mqtt_config.client_id, (uri ? uri + 1 : mqtt_config.uri));
+    const char* uri = strchr(mqtt_config.broker.address.uri, '@');
+    ESP_LOGI(TAG, "Connecting %s to %s", mqtt_config.credentials.client_id, (uri ? uri + 1 : mqtt_config.broker.address.uri));
     mqttClient = esp_mqtt_client_init(&mqtt_config);
+    esp_mqtt_client_register_event(mqttClient, (esp_mqtt_event_id_t)ESP_EVENT_ANY_ID, mqtt_event_handler, NULL);
     esp_mqtt_client_start(mqttClient);
     vTaskDelete(NULL);
 }
@@ -123,7 +123,7 @@ esp_err_t mqtt_subscribe(const char* topic, mqtt_callback_t callback) {
 
 void mqtt_init() {
     mqtt_event_group = xEventGroupCreate();
-    if (mqtt_config.uri && mqtt_config.uri[0]) {
+    if (mqtt_config.broker.address.uri && mqtt_config.broker.address.uri[0]) {
         xTaskCreatePinnedToCore(mqtt_init_task, "mqtt_init_task", 4096, NULL, 5, NULL, 0);
     }
 }

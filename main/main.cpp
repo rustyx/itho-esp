@@ -9,6 +9,7 @@
 #include "mqtt.h"
 #include "util.h"
 #include "wifi.h"
+#include <algorithm>
 #include <driver/uart.h>
 #include <esp_event.h>
 #include <esp_log.h>
@@ -17,14 +18,16 @@
 #include <freertos/event_groups.h>
 #include <freertos/queue.h>
 #include <freertos/task.h>
-#include <jsmn.h>
+#include <string.h>
 
 static const char* TAG = "main";
 
 static char cmd[128];
 static uint8_t buf[128];
 static uint32_t cmdlen = 0;
-static int dht_ret = -1, hum = -1, temp = -1;
+static struct {
+    int ret = -1, hum = -1, temp = -1;
+} dht_ret[max_sensors];
 static bool verbose = false, reportHex = false;
 
 Nvs nvs;
@@ -47,8 +50,14 @@ bool sendBytesHex(const char* hex, size_t hexlen) {
 }
 
 static void publishHumidity() {
-    char buf[32];
-    snprintf(buf, sizeof(buf), "[%d.%d,%d.%d,%d]", hum / 10, hum % 10, temp / 10, temp % 10, (int)dht_ret);
+    char buf[20 * max_sensors];
+    int len = 0;
+    for (int i = 0; i < max_sensors; i++) {
+        auto& ret = dht_ret[i];
+        len += snprintf(buf + len, sizeof(buf) - len, "%c%d.%d,%d.%d,%d", len ? ',' : '[', ret.hum / 10, ret.hum % 10, ret.temp / 10, ret.temp % 10,
+                 ret.ret);
+    }
+    strncpy(buf + len, "]", sizeof(buf) - 1);
     mqtt_publish("esp-data-dht", buf);
 }
 
@@ -140,8 +149,9 @@ static const int mode_set_max_freq_sec = 600; // set mode at most once every 10 
 static int prev_hum;
 
 static void handleHumidity() {
-    if (dht_ret != DHT_OK) {
-        return;
+    int hum = 0;
+    for (int i = 0; i < max_sensors; i++ ) {
+        hum = std::max(hum, dht_ret[i].hum);
     }
     if (hum >= config.high_hum_threshold && prev_hum >= config.high_hum_threshold) {
         int64_t now = esp_timer_get_time();
@@ -188,10 +198,6 @@ static void processConsoleCommand() {
     } else {
         processCommand(cmd, strlen(cmd));
     }
-}
-
-inline bool eq(const char* json, const jsmntok_t& tok, const char* s) {
-    return (tok.type == JSMN_STRING && strncmp(json + tok.start, s, tok.end - tok.start) == 0);
 }
 
 portMUX_TYPE status_mux = portMUX_INITIALIZER_UNLOCKED;
@@ -250,7 +256,7 @@ void handleStatus(const uint8_t* data, size_t len) {
             x = (x << 8) | data[i++];
         }
         int rem = dt & 7;
-        snprintf(buf, sizeof(buf), "%0*d", rem + 1 + (x < 0), x);
+        snprintf(buf, sizeof(buf), "%0*ld", (int)(rem + 1 + (x < 0)), (long int)x);
         size_t len = strlen(buf);
         s.append(buf, len - rem);
         if (rem) {
@@ -258,8 +264,15 @@ void handleStatus(const uint8_t* data, size_t len) {
             s.append(buf + len - rem, rem);
         }
     }
-    snprintf(buf, sizeof(buf), ",%d.%d,%d.%d,%d]", hum / 10, hum % 10, temp / 10, temp % 10, (int)dht_ret);
-    s += buf;
+    for (int i = 0; i < max_sensors; i++) {
+        if (!config.sensors[i].type) {
+            continue;
+        }
+        auto& ret = dht_ret[i];
+        snprintf(buf, sizeof(buf), ",%d.%d,%d.%d,%d", ret.hum / 10, ret.hum % 10, ret.temp / 10, ret.temp % 10, ret.ret);
+        s += buf;
+    }
+    s += "]";
     mqtt_publish_bin("esp-data", s.c_str(), s.length());
 }
 
@@ -301,49 +314,52 @@ static void mqtt_message_callback(const char* topic, int topic_len, const char* 
 static void mqtt_connect_callback() { mqtt_subscribe("esp", mqtt_message_callback); }
 
 static void dht_task(void* arg) {
-    DHT dht((gpio_num_t)config.dht_gpio);
+    int id = (int)arg;
+    DHT dht(("DHT" + std::to_string(id + 1)).c_str(), (gpio_num_t)config.sensors[id].sda);
     int errors = 1;
+    auto& ret = dht_ret[id];
     while (1) {
         vTaskDelay(5 * configTICK_RATE_HZ); // wait at least 2 sec before reading again
-        dht_ret = dht.readDHT();
-        if (!dht.errorHandler(dht_ret)) {
+        ret.ret = dht.readDHT();
+        if (!dht.errorHandler(ret.ret)) {
             if (errors && ++errors > 3) {
-                ESP_LOGI(TAG, "Stopping DHT task");
+                ESP_LOGI(TAG, "Stopping DHT[%d] task", id + 1);
                 break;
             }
             continue;
         }
         errors = 0;
-        hum = dht.getHumidity(), temp = dht.getTemperature();
-        ESP_LOGI(TAG, "Humidity %d.%d, Temp %d.%d", hum / 10, hum % 10, temp / 10, temp % 10);
+        ret.hum = dht.getHumidity();
+        ret.temp = dht.getTemperature();
+        ESP_LOGI(TAG, "DHT[%d] Humidity %d.%d, Temp %d.%d", id + 1, ret.hum / 10, ret.hum % 10, ret.temp / 10, ret.temp % 10);
         handleHumidity();
     }
     vTaskDelete(nullptr);
 }
 
-#define SHT4x_GPIO_SDA GPIO_NUM_21
-#define SHT4x_GPIO_SCL GPIO_NUM_22
-
 static void sht4x_task(void* arg) {
-    SHT4x sht((gpio_num_t)config.sht4x_sda, (gpio_num_t)config.sht4x_scl);
+    int id = (int)arg;
+    SHT4x sht(("SHT" + std::to_string(id + 1)).c_str(), (gpio_num_t)config.sensors[id].sda, (gpio_num_t)config.sensors[id].scl);
     int errors = 1;
     i2c_err_t res = sht.readSerial();
     sht.errorHandler(res);
-    ESP_LOGI(TAG, "SHT4x serial: %u", sht.getSerial());
+    ESP_LOGI(TAG, "SHT4x[%d] serial: %" PRIu32, id + 1, sht.getSerial());
+    auto& ret = dht_ret[id];
     while (1) {
         vTaskDelay(5 * configTICK_RATE_HZ);
         i2c_err_t res = sht.measure();
-        dht_ret = (int)res;
+        ret.ret = (int)res;
         if (!sht.errorHandler(res)) {
             if (errors && ++errors > 3) {
-                ESP_LOGI(TAG, "Stopping SHT4x task");
+                ESP_LOGI(TAG, "Stopping SHT4x[%d] task", id + 1);
                 break;
             }
             continue;
         }
         errors = 0;
-        hum = sht.getHumidity(), temp = sht.getTemperature();
-        ESP_LOGI(TAG, "Humidity %d.%d, Temp %d.%d", hum / 10, hum % 10, temp / 10, temp % 10);
+        ret.hum = sht.getHumidity();
+        ret.temp = sht.getTemperature();
+        ESP_LOGI(TAG, "SHT4x[%d] Humidity %d.%d, Temp %d.%d", id + 1, ret.hum / 10, ret.hum % 10, ret.temp / 10, ret.temp % 10);
         handleHumidity();
     }
     vTaskDelete(nullptr);
@@ -363,10 +379,15 @@ extern "C" void app_main() {
     wifi_init();
     mqtt_init();
     mqtt_on_connect(&mqtt_connect_callback);
-    if (config.dht_gpio) {
-        xTaskCreatePinnedToCore(&dht_task, "dht_task", 4096, NULL, 7, NULL, 0);
-    } else if (config.sht4x_sda && config.sht4x_scl) {
-        xTaskCreatePinnedToCore(&sht4x_task, "sht4x_task", 4096, NULL, 7, NULL, 0);
+    for (int i = 0; i < config.sensors.size(); i++) {
+        switch (config.sensors[i].type) {
+            case SensorTypeDHT:
+                xTaskCreatePinnedToCore(&dht_task, ("dht_task" + std::to_string(i)).c_str(), 4096, (void*)i, 7, NULL, 0);
+                break;
+            case SensorTypeSHT4x:
+                xTaskCreatePinnedToCore(&sht4x_task, ("sht4x_task" + std::to_string(i)).c_str(), 4096, (void*)i, 7, NULL, 0);
+                break;
+        }
     }
     xTaskCreatePinnedToCore(requestStatusLoopTask, "statusLoopTask", 4096, NULL, 8, NULL, 1);
 

@@ -15,12 +15,12 @@
 #include <esp_log.h>
 #include <freertos/FreeRTOS.h>
 #include <stdint.h>
+#include <string.h>
 #include <sys/types.h>
 
-static char TAG[] = "DHT";
-
-DHT::DHT(gpio_num_t pin) : dhtGpio(pin) {
-    ESP_LOGI(TAG, "Starting DHT on GPIO %d", dhtGpio);
+DHT::DHT(const char* tg, gpio_num_t pin) : dhtGpio(pin) {
+    strncpy(tag, tg, sizeof(tag));
+    ESP_LOGI(tag, "Starting DHT on GPIO %d", dhtGpio);
     gpio_config_t config{BIT64(dhtGpio), GPIO_MODE_INPUT, GPIO_PULLUP_DISABLE, GPIO_PULLDOWN_DISABLE, GPIO_INTR_DISABLE};
     gpio_config(&config);
 }
@@ -28,15 +28,15 @@ DHT::DHT(gpio_num_t pin) : dhtGpio(pin) {
 bool DHT::errorHandler(int response) {
     switch (response) {
     case DHT_TIMEOUT_ERROR:
-        ESP_LOGE(TAG, "Sensor timeout");
+        ESP_LOGE(tag, "Sensor timeout");
         break;
     case DHT_CHECKSUM_ERROR:
-        ESP_LOGE(TAG, "Checksum error");
+        ESP_LOGE(tag, "Checksum error");
         break;
     case DHT_OK:
         break;
     default:
-        ESP_LOGE(TAG, "Unknown error");
+        ESP_LOGE(tag, "Unknown error");
     }
     return response == DHT_OK;
 }
@@ -49,7 +49,7 @@ inline int DHT::waitForLevel(int usTimeOut, bool state) {
             break;
         }
         ++uSec;
-        ets_delay_us(1); // uSec delay
+        esp_rom_delay_us(1); // uSec delay
     }
     return uSec;
 }
@@ -100,12 +100,12 @@ int DHT::readDHT() {
 
     // pull down for 5 ms for a smooth and nice wake up
     gpio_set_level(dhtGpio, 0);
-    ets_delay_us(5000);
+    esp_rom_delay_us(5000);
 
     portENTER_CRITICAL(&mutex);
     // pull up for 25 us to gently ask for data
     gpio_set_level(dhtGpio, 1);
-    ets_delay_us(25);
+    esp_rom_delay_us(25);
 
     gpio_set_direction(dhtGpio, GPIO_MODE_INPUT);
 
@@ -120,10 +120,10 @@ int DHT::readDHT() {
     // -- 80us up ------------------------
 
     int uSec2 = waitForLevel(100, 1);
-    // ESP_LOGD(TAG, "Response 2 = %d", uSec2);
+    // ESP_LOGD(tag, "Response 2 = %d", uSec2);
     if (uSec2 < 0) {
         portEXIT_CRITICAL(&mutex);
-        // ESP_LOGW(TAG, "Sensor timeout 2");
+        // ESP_LOGW(tag, "Sensor timeout 2");
         return DHT_TIMEOUT_ERROR;
     }
 
@@ -134,18 +134,18 @@ int DHT::readDHT() {
         uSec = waitForLevel(100, 0);
         if (uSec < 0) {
             portEXIT_CRITICAL(&mutex);
-            ESP_LOGW(TAG, "Sensor timeout %d @ %d", 1, k);
+            ESP_LOGW(tag, "Sensor timeout %d @ %d", 1, k);
             return DHT_TIMEOUT_ERROR;
         }
         // high after 50us
         uSec = waitForLevel(75, 1);
         if (uSec < 0) {
             portEXIT_CRITICAL(&mutex);
-            ESP_LOGW(TAG, "Sensor timeout %d @ %d", 2, k);
+            ESP_LOGW(tag, "Sensor timeout %d @ %d", 2, k);
             return DHT_TIMEOUT_ERROR;
         }
         // data bit after 26..28 us
-        ets_delay_us(40);
+        esp_rom_delay_us(40);
 
         if (gpio_get_level(dhtGpio))
             dhtData[byteInx] |= (1 << bitInx);
@@ -169,7 +169,7 @@ int DHT::readDHT() {
     if (dhtData[2] & 0x80) // negative temp
         temperature = -temperature;
 
-    ESP_LOGD(TAG, "DHT Response = %d, %d, %02x %02x %02x %02x %02x", uSec1, uSec2, dhtData[0], dhtData[1], dhtData[2], dhtData[3], dhtData[4]);
+    ESP_LOGD(tag, "DHT Response = %d, %d, %02x %02x %02x %02x %02x", uSec1, uSec2, dhtData[0], dhtData[1], dhtData[2], dhtData[3], dhtData[4]);
 
     // == verify if checksum is ok ===========================================
     // Checksum is the sum of Data 8 bits masked out 0xFF

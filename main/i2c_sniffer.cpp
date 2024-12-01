@@ -1,5 +1,5 @@
 #include "i2c_sniffer.h"
-#include <esp32/rom/ets_sys.h>
+#include <soc/gpio_periph.h> // ESP32 GPIO
 #include <esp_log.h>
 #include <esp_system.h>
 #include <esp_timer.h>
@@ -12,7 +12,7 @@ static const char* TAG = "i2c-sniffer";
 
 typedef enum { ACK = 0x100, START = 0x200, STOP = 0x400 } state_t;
 typedef uint16_t gpdata_t;
-static xQueueHandle gpio_evt_queue;
+static QueueHandle_t gpio_evt_queue;
 #define pin_(pin) GPIO_NUM_##pin
 #define PIN(pin)  pin_(pin)
 #if I2C_SNIFFER_SCL_PIN < 32 && I2C_SNIFFER_SDA_PIN < 32
@@ -108,9 +108,9 @@ static void sniffer_task(void* arg) {
 #endif
             } else {
 #if I2C_SNIFFER_PRINT_TIMING
-                printf("%02X/%d%c", (x & 0xFF), (x >> 16), (x & ACK ? '+' : '-'));
+                printf("%02lX/%d%c", (x & 0xFF), (x >> 16), (x & ACK ? '+' : '-'));
 #else
-                printf("%02X%c", (x & 0xFF), (x & ACK ? '+' : '-'));
+                printf("%02lX%c", (x & 0xFF), (x & ACK ? '+' : '-'));
 #endif
             }
         }
