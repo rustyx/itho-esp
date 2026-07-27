@@ -2,10 +2,7 @@
 #include <freertos/FreeRTOS.h>
 #include <mqtt_client.h>
 
-struct mqtt_config_t : public esp_mqtt_client_config_t {
-    int pub_qos;
-    int sub_qos;
-};
+struct mqtt_config_t : public esp_mqtt_client_config_t {};
 
 extern mqtt_config_t mqtt_config;
 void mqtt_init();

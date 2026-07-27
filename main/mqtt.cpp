@@ -14,7 +14,6 @@
 #include <mqtt_client.h>
 #include <nvs_flash.h>
 #include <string.h>
-#include <string>
 
 static const char* TAG = "MQTT";
 mqtt_config_t mqtt_config;
@@ -106,7 +105,7 @@ int mqtt_publish(const char* topic, const char* data) {
 int mqtt_publish_bin(const char* topic, const char* data, int len) {
     if (!mqttClient)
         return 0;
-    int msg_id = esp_mqtt_client_publish(mqttClient, topic, data, len, mqtt_config.pub_qos, 0);
+    int msg_id = esp_mqtt_client_publish(mqttClient, topic, data, len, 0, 0);
     ESP_LOGD(TAG, "publish to %s: msg_id=%d", topic, msg_id); // msg_id > 0 only when QoS > 0
     return msg_id;
 }
@@ -116,7 +115,7 @@ esp_err_t mqtt_subscribe(const char* topic, mqtt_callback_t callback) {
         return 0;
     if (!mqttCallback && callback)
         mqttCallback = callback;
-    esp_err_t rc = esp_mqtt_client_subscribe(mqttClient, topic, mqtt_config.sub_qos);
+    esp_err_t rc = esp_mqtt_client_subscribe(mqttClient, topic, 0);
     ESP_LOGI(TAG, "mqtt_subscribe '%s': rc=%d", topic, rc);
     return rc;
 }

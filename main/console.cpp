@@ -5,7 +5,9 @@ bool console_read(const char* prompt, std::string& res, const char* defaultValue
     std::string buf;
     char c;
     bool rc = true;
-    printf("%s", prompt);
+    // printf("%s", prompt);
+    uart_write_bytes(UART_NUM_0, prompt, strlen(prompt));
+    // fflush(stdout);
     res.clear();
     while (1) {
         while (1) {
@@ -19,7 +21,7 @@ bool console_read(const char* prompt, std::string& res, const char* defaultValue
                     } else if (c == '\b') {
                         if (buf.size()) {
                             buf.resize(buf.size() - 1);
-                            putchar(c);
+                            uart_write_bytes(UART_NUM_0, &c, 1);
                         }
                     } else {
                         res.clear();
@@ -28,11 +30,13 @@ bool console_read(const char* prompt, std::string& res, const char* defaultValue
                     }
                 } else {
                     buf += c;
-                    putchar(c);
+                    uart_write_bytes(UART_NUM_0, &c, 1);
+                    // fflush(stdout);
                 }
             }
         }
-        printf("\n\n");
+        // printf("\n\n");
+        uart_write_bytes(UART_NUM_0, "\n", 1);
         res += buf;
         if (multiline && !buf.empty()) {
             res += '\n';
